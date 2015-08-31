@@ -79,7 +79,10 @@ function compareAllContacts() {
       cursor.continue();
     } else {
       var shouldBeDeleted = knownIDs.filter(function(v) { return v != null; })
-      console.log('done iterating, need to delete', shouldBeDeleted);
+
+      shouldBeDeleted.forEach(function(deletedID) {
+        removeOneContactByID(deletedID);
+      })
     }
   };
 
