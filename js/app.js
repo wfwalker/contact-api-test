@@ -37,7 +37,7 @@ function compareOneContact(inContact) {
 function removeOneContactByID(inRemovedContactID) {
   if (gContacts[inRemovedContactID]) {
     logMessage('found removed contact, removing', inRemovedContactID);
-    gContacts[inRemovedContactID] = null;
+    delete gContacts[inRemovedContactID];
   } else {
     logMessage('DID NOT find removed contact, doing nothing', inRemovedContactID);
   }
@@ -49,6 +49,8 @@ function compareAllContacts() {
   resetLog();
   logMessage('compareAllContacts: ' + Object.keys(gContacts).length);
 
+  var knownIDs = Object.keys(gContacts);
+
   var allContacts = navigator.mozContacts.getAll({sortBy: "familyName", sortOrder: "descending"});
 
   // TODO: maintain list of all known contact id's
@@ -58,11 +60,26 @@ function compareAllContacts() {
     var cursor = event.target;
     
     if (cursor.result) {
-      if (gContacts[cursor.result.id] && (cursor.result.updated <= gLastUpdate)) {
+
+      var tmpIndex = knownIDs.indexOf(cursor.result.id);
+      if (tmpIndex >= 0) {
+        knownIDs[tmpIndex] = null;
+      }
+
+      if (gContacts[cursor.result.id] && (cursor.result.updated < gLastUpdate)) {
+        // that contact is already in my local copy
+        // and hasn't been updated since our last check
+        // so do nothing
       } else {
+        // that contact either isn't in my list
+        // or has been recently updated, so need to compare
         compareOneContact(cursor.result);
       }
+
       cursor.continue();
+    } else {
+      var shouldBeDeleted = knownIDs.filter(function(v) { return v != null; })
+      console.log('done iterating, need to delete', shouldBeDeleted);
     }
   };
 
