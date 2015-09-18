@@ -27,10 +27,12 @@ function compareOneContact(inContact) {
     } else {
       gContacts[inContact.id] = inContact;
       logMessage('exisiting older than modified, updating');
+      displayAllContacts();
     }
   } else {
     logMessage('adding new contact to DB ' + inContact.id);
     gContacts[inContact.id] = inContact;
+    displayAllContacts();    
   }
 }
 
@@ -155,7 +157,16 @@ function scheduleAlarm(inDelta) {
   request.onerror = function () { 
     logMessage("An error occurred: " + this.error.name);
   };
+}
 
+function displayAllContacts() {
+  console.log('displayAllContacts');
+
+  document.getElementById('summary').innerHTML = '';
+
+  Object.keys(gContacts).forEach(function(aContactID) {
+    document.getElementById('summary').innerHTML += ('<div>' + gContacts[aContactID].givenName[0] + ' ' + gContacts[aContactID].familyName[0] + '</div>');
+  });
 }
 
 // DOMContentLoaded is fired once the document has been loaded and parsed,
@@ -168,8 +179,36 @@ window.addEventListener('DOMContentLoaded', function() {
   // https://developer.mozilla.org/Web/JavaScript/Reference/Functions_and_function_scope/Strict_mode
   'use strict';
 
+  document.getElementById('addContact').addEventListener('click', function (e) {
+    console.log('add contact and sync to firefox');
+
+    // second way: using a value object
+    var contactData = {
+      givenName: ["John"],
+      familyName: ["Doe"],
+      nickname: ["No kidding"]
+    };
+
+    var person = new mozContact(contactData);
+    var saving = navigator.mozContacts.save(person);
+
+    saving.onsuccess = function() {
+      console.log('new contact saved', person);
+      // This update the person as it is stored
+      // It includes its internal unique ID
+      // Note that saving.result is null here
+    };
+
+    saving.onerror = function(err) {
+      console.error(err);
+    };
+  })
+
   // on launch, update all contacts
   compareAllContacts();
+
+  // and show a summary
+  displayAllContacts();    
 
   // listen for contact changes
   navigator.mozContacts.addEventListener('contactchange', function(updateEvent) { 
@@ -192,6 +231,8 @@ window.addEventListener('DOMContentLoaded', function() {
     killOldAlarms();
 
     compareAllContacts();
+
+    displayAllContacts();
 
     // note: artificially short time for demo
     scheduleAlarm(10000);
