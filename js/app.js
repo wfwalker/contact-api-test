@@ -95,6 +95,32 @@ function compareAllContacts() {
   gLastUpdate = Date.now();
 }
 
+// for a given ID, find that contact in the mozContacts DB; if found, remove it
+function findAndRemoveContact(inID) {
+  console.log('findAndRemoveContact', inID);
+
+  var options = {
+    filterValue: inID,
+    filterBy: ['id'],
+    filterOp: 'equals'
+  }
+
+  var search = navigator.mozContacts.find(options);
+
+  search.onsuccess = function() {
+    if (search.result.length === 1) {
+      navigator.mozContacts.remove(search.result[0]);
+    } else {
+      logMessage(search.result.length + " contact(s) for ID, cannot remove");
+    }
+  };
+
+  search.onerror = function() {
+    logMessage('could not search contacts for ID');
+  };    
+}
+
+
 // for a given ID, find that contact in the mozContacts DB; if found, try updating the local DB
 function getAndUpdateContactByID(inID) {
   console.log('getAndUpdateContactByID', inID);
@@ -165,8 +191,20 @@ function displayAllContacts() {
   document.getElementById('summary').innerHTML = '';
 
   Object.keys(gContacts).forEach(function(aContactID) {
-    document.getElementById('summary').innerHTML += ('<div>' + gContacts[aContactID].givenName[0] + ' ' + gContacts[aContactID].familyName[0] + '</div>');
+    document.getElementById('summary').innerHTML += '<div>';
+    document.getElementById('summary').innerHTML += ('<button class="deleter" data-id="' + aContactID + '">delete</button>');
+    document.getElementById('summary').innerHTML += (gContacts[aContactID].givenName[0] + ' ' + gContacts[aContactID].familyName[0]);
+    document.getElementById('summary').innerHTML += '</div>';
   });
+
+  var deleters = document.getElementsByClassName('deleter');
+  for (var index = 0; index < deleters.length; index++) {
+    var aDeleter = deleters[index];
+    aDeleter.addEventListener('click', function (e) {
+      var contactID = e.target.getAttribute('data-id');
+      findAndRemoveContact(contactID);
+    });
+  }
 }
 
 // DOMContentLoaded is fired once the document has been loaded and parsed,
